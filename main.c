@@ -274,13 +274,9 @@ static int profile_matchp(profile_t* p)
 
     bat = read_int_from_sysfs_node(CAPACITY_FILENAME);
 
-    if (ac_p && p->ac > 0)
-        return 1;
-
-    if(bat < p->battery)
-        return 1;
-
-    return 0;
+    return ((p->ac == -1 || !!p->ac == !!ac_p) &&
+            (p->battery == -1 || bat < p->battery) &&
+            (p->screen == -1 || !!p->screen == screen_on));
 }
 
 static void sighup_handler(int signo __unused)

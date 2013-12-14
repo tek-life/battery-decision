@@ -2,7 +2,7 @@
 #define CAPACITY_FILENAME "/sys/class/power_supply/battery/capacity"
 #define AC_FILENAME "/sys/class/power_supply/usb/online"
 #define AC2_FILENAME "/sys/class/power_supply/ac/online"
-#define SLEEP_INTERVAL_SEC 7
+#define SLEEP_INTERVAL_SEC 5
 #define ONDEMAND_NODE "/sys/devices/system/cpu/cpufreq/ondemand"
 #define MAX_PROFILES 64
 #define CPU_NODE_FMT "/sys/devices/system/cpu/cpu%d/online"

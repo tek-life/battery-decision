@@ -88,11 +88,13 @@ static profile_t load_settings(const meta_t* meta,
                                const char* filename,
                                int* ok)
 {
-    profile_t ret = { {0} };
+    profile_t ret;
     char buf[BUFSIZ];
     FILE* stream = fopen(filename, "r");
     int i;
     int lineno = 0;
+
+    memset(&ret, 0, sizeof(ret));
 
     fprintf(stderr, "[%s]\n", filename);
 
@@ -300,7 +302,9 @@ int main(int argc, char** argv)
     pthread_t thr;
     const char* profile_dir;
     int cnt, i, last_profile = -1;
-    static profile_t profiles[MAX_PROFILES] = { { {0} } }; /* no stackalloc */
+    static profile_t profiles[MAX_PROFILES]; /* better BSS than stackalloc */
+
+    memset(profiles, 0, sizeof(profile_t[MAX_PROFILES]));
 
     (void) signal(SIGHUP, sighup_handler);
 

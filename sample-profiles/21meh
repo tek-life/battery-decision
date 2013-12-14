@@ -1,0 +1,8 @@
+down_differential 1
+ignore_nice_load 1
+powersave_bias 190
+up_threshold 96
+sampling_down_factor 1
+battery 75
+ac 0
+cpu_mask 1

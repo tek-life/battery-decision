@@ -328,6 +328,7 @@ int main(int argc, char** argv)
     }
 
 start:
+    last_profile = -1;
     cnt = load_profiles(profile_dir, profiles);
 
     fprintf(stderr, "loaded %d profiles\n", cnt);

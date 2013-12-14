@@ -1,4 +1,4 @@
-down_differential 1
+down_differential 5
 ignore_nice_load 1
 powersave_bias 0
 up_threshold 80

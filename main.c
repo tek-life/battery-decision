@@ -6,6 +6,8 @@
 #define ONDEMAND_NODE "/sys/devices/system/cpu/cpufreq/ondemand"
 #define MAX_PROFILES 64
 #define CPU_NODE_FMT "/sys/devices/system/cpu/cpu%d/online"
+#define SCREEN_OFF_NODE "/sys/power/wait_for_fb_sleep"
+#define SCREEN_ON_NODE "/sys/power/wait_for_fb_wake"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,8 +21,10 @@
 #include <errno.h>
 #include <time.h>
 #include <signal.h>
+#include <pthread.h>
 
 static volatile int reloadp = 0;
+static volatile int screen_on = 0;
 
 typedef struct ondemand_profile {
     char name[256 + 1];
@@ -33,6 +37,7 @@ typedef struct ondemand_profile {
     int battery;
     int ac;
     int cpu_mask;
+    int screen;
 } profile_t;
 
 typedef struct meta {
@@ -54,6 +59,7 @@ static const meta_t meta_profile[] = {
     FIELD(profile_t, battery),
     FIELD(profile_t, ac),
     FIELD(profile_t, cpu_mask),
+    FIELD(profile_t, screen),
     FIELD_END
 };
 
@@ -203,8 +209,12 @@ static void apply_profile(const profile_t* profile, const meta_t* meta)
             continue;
         }
         /* XXX hack */
-        if (!strcmp(meta[i].name, "ac") || !strcmp(meta[i].name, "battery"))
+        if (!strcmp(meta[i].name, "ac") ||
+            !strcmp(meta[i].name, "battery") ||
+            !strcmp(meta[i].name, "screen"))
+        {
             continue;
+        }
         value = *(int*)(ptr + meta[i].offset);
         if (value == -1)
             continue;
@@ -278,8 +288,21 @@ static void sighup_handler(int signo __unused)
     reloadp = 1;
 }
 
+static void* screen_worker(void* param __unused)
+{
+    while (1)
+    {
+        (void) read_int_from_sysfs_node(SCREEN_ON_NODE);
+        screen_on = 1;
+        (void) read_int_from_sysfs_node(SCREEN_OFF_NODE);
+        screen_on = 0;
+    }
+    return NULL;
+}
+
 int main(int argc, char** argv)
 {
+    pthread_t thr;
     const char* profile_dir;
     int cnt, i, last_profile = -1;
     static profile_t profiles[MAX_PROFILES] = { { {0} } }; /* no stackalloc */
@@ -296,6 +319,11 @@ int main(int argc, char** argv)
         profile_dir = argv[1];
         break;
     default:
+        return 1;
+    }
+
+    if (pthread_create(&thr, NULL, screen_worker, NULL))
+    {
         return 1;
     }
 

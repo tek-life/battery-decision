@@ -2,7 +2,7 @@
 #define CAPACITY_FILENAME "/sys/class/power_supply/battery/capacity"
 #define AC_FILENAME "/sys/class/power_supply/usb/online"
 #define AC2_FILENAME "/sys/class/power_supply/ac/online"
-#define SLEEP_INTERVAL_SEC 30
+#define SLEEP_INTERVAL_SEC 15
 #define ONDEMAND_NODE "/sys/devices/system/cpu/cpufreq/ondemand"
 #define MAX_PROFILES 64
 #define CPU_NODE_FMT "/sys/devices/system/cpu/cpu%d/online"
@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 typedef struct ondemand_profile {
     char name[256 + 1];
@@ -304,7 +305,7 @@ int main(int argc, char** argv)
             int matchp = profile_matchp(&profiles[i]);
             if (matchp)
             {
-                fprintf(stderr, "applying profile %s\n", profiles[i].name);
+                fprintf(stderr, "%ld -- applying profile %s\n", time(NULL), profiles[i].name);
                 apply_profile(&profiles[i], meta_profile);
                 break;
             }

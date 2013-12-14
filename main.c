@@ -18,6 +18,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <signal.h>
+
+static volatile int reloadp = 0;
 
 typedef struct ondemand_profile {
     char name[256 + 1];
@@ -270,11 +273,18 @@ static int profile_matchp(profile_t* p)
     return 0;
 }
 
+static void sighup_handler(int signo __unused)
+{
+    reloadp = 1;
+}
+
 int main(int argc, char** argv)
 {
     const char* profile_dir;
     int cnt, i;
     static profile_t profiles[MAX_PROFILES] = { { {0} } }; /* no stackalloc */
+
+    (void) signal(SIGHUP, sighup_handler);
 
     switch (argc)
     {
@@ -289,6 +299,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
+start:
     cnt = load_profiles(profile_dir, profiles);
 
     fprintf(stderr, "loaded %d profiles\n", cnt);
@@ -315,6 +326,11 @@ int main(int argc, char** argv)
             fprintf(stderr, "applied no profile!\n");
 
         sleep(SLEEP_INTERVAL_SEC);
+        if (reloadp)
+        {
+            reloadp = 0;
+            goto start;
+        }
     }
 
     return 0;

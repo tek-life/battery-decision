@@ -92,6 +92,7 @@ static profile_t load_settings(const meta_t* meta,
     char buf[BUFSIZ];
     FILE* stream = fopen(filename, "r");
     int i;
+    int lineno = 0;
 
     fprintf(stderr, "[%s]\n", filename);
 
@@ -108,8 +109,6 @@ static profile_t load_settings(const meta_t* meta,
         load_setting(&ret, &meta[i], "-1");
 
     buf[BUFSIZ-1] = '\0';
-
-    int lineno = 0;
 
     while (lineno++, fgets(buf, BUFSIZ-1, stream))
     {

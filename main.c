@@ -216,7 +216,7 @@ static void apply_profile(const profile_t* profile, const meta_t* meta)
             continue;
         }
         sprintf(buf, "%d", value);
-        fprintf(stderr, "apply %s: %d\n", path, value);
+        /* fprintf(stderr, "apply %s: %d\n", path, value); */
         write(fd, buf, strlen(buf));
         close(fd);
     }
@@ -281,7 +281,7 @@ static void sighup_handler(int signo __unused)
 int main(int argc, char** argv)
 {
     const char* profile_dir;
-    int cnt, i;
+    int cnt, i, last_profile = -1;
     static profile_t profiles[MAX_PROFILES] = { { {0} } }; /* no stackalloc */
 
     (void) signal(SIGHUP, sighup_handler);
@@ -316,14 +316,19 @@ start:
             int matchp = profile_matchp(&profiles[i]);
             if (matchp)
             {
-                fprintf(stderr, "%ld -- applying profile %s\n", time(NULL), profiles[i].name);
+                if (last_profile != i)
+                    fprintf(stderr, "%ld -- applying profile %s\n", time(NULL), profiles[i].name);
+                last_profile = i;
                 apply_profile(&profiles[i], meta_profile);
                 break;
             }
         }
 
         if (i == cnt)
+        {
+            last_profile = -1;
             fprintf(stderr, "applied no profile!\n");
+        }
 
         sleep(SLEEP_INTERVAL_SEC);
         if (reloadp)

@@ -1,7 +1,0 @@
-down_differential 5
-ignore_nice_load 1
-powersave_bias 0
-up_threshold 80
-sampling_down_factor 3
-ac 1
-cpu_mask -1

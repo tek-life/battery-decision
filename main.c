@@ -40,26 +40,70 @@ typedef struct ondemand_profile {
     int screen;
 } profile_t;
 
-typedef struct meta {
+struct meta;
+typedef struct meta meta_t;
+typedef void (*handler_t)(const profile_t* profile, const meta_t* meta);
+
+struct meta {
     const char* name;
     off_t offset;
-} meta_t;
+    handler_t handler;
+};
 
-#define FIELD(dtype, member) \
-    { #member, offsetof(dtype, member) }
-#define FIELD_END { NULL, -1 }
+static void apply_ondemand(const profile_t* profile, const meta_t* meta)
+{
+    char path[PATH_MAX+1] = {0}, buf[256];
+    char const* ptr = (void*) profile;
+    int fd, value = *(int*)(ptr + meta->offset);
+    if (value == -1)
+        return;
+    snprintf(path, PATH_MAX, "%s/%s", ONDEMAND_NODE, meta->name);
+    fd = open(path, O_WRONLY);
+    if (fd == -1)
+    {
+        fprintf(stderr, "open '%s': %s\n", path, strerror(errno));
+        return;
+    }
+    sprintf(buf, "%d", value);
+    /* fprintf(stderr, "apply %s: %d\n", path, value); */
+    write(fd, buf, strlen(buf));
+    close(fd);
+}
+
+static void apply_cpu_mask(const profile_t* profile, const meta_t* meta __unused)
+{
+    int i, fd;
+    char path[PATH_MAX+1] = {0};
+    for (i = 0; i < 8; i++)
+    {
+        snprintf(path, PATH_MAX, CPU_NODE_FMT, i);
+        fd = open(path, O_WRONLY);
+        if (fd == -1)
+            continue;
+        write(fd, (profile->cpu_mask & (1 << (i+1))) ? "1" : "0", 1);
+        close(fd);
+    }
+}
+
+static void apply_noop(const profile_t* profile __unused, const meta_t* meta __unused)
+{
+}
+
+#define FIELD(dtype, member, handler) \
+    { #member, offsetof(dtype, member), handler }
+#define FIELD_END { NULL, -1, NULL }
 
 static const meta_t meta_profile[] = {
-    FIELD(profile_t, down_differential),
-    FIELD(profile_t, ignore_nice_load),
-    FIELD(profile_t, powersave_bias),
-    FIELD(profile_t, up_threshold),
-    FIELD(profile_t, sampling_down_factor),
-    FIELD(profile_t, sampling_rate),
-    FIELD(profile_t, battery),
-    FIELD(profile_t, ac),
-    FIELD(profile_t, cpu_mask),
-    FIELD(profile_t, screen),
+    FIELD(profile_t, down_differential, apply_ondemand),
+    FIELD(profile_t, ignore_nice_load, apply_ondemand),
+    FIELD(profile_t, powersave_bias, apply_ondemand),
+    FIELD(profile_t, up_threshold, apply_ondemand),
+    FIELD(profile_t, sampling_down_factor, apply_ondemand),
+    FIELD(profile_t, sampling_rate, apply_ondemand),
+    FIELD(profile_t, battery, apply_noop),
+    FIELD(profile_t, ac, apply_noop),
+    FIELD(profile_t, cpu_mask, apply_cpu_mask),
+    FIELD(profile_t, screen, apply_noop),
     FIELD_END
 };
 
@@ -190,47 +234,9 @@ static int load_profiles(const char* profile_dir, profile_t* profiles)
 
 static void apply_profile(const profile_t* profile, const meta_t* meta)
 {
-    int i, fd, value;
-    char path[PATH_MAX+1] = {0}, buf[256];
-    char const* ptr = (void*) profile;
+    int i;
     for (i = 0; meta[i].name; i++)
-    {
-        /* XXX hack */
-        if (!strcmp(meta[i].name, "cpu_mask"))
-        {
-            for (i = 0; i < 8; i++)
-            {
-                snprintf(path, PATH_MAX, CPU_NODE_FMT, i);
-                fd = open(path, O_WRONLY);
-                if (fd == -1)
-                    continue;
-                write(fd, (profile->cpu_mask & (1 << (i+1))) ? "1" : "0", 1);
-                close(fd);
-            }
-            continue;
-        }
-        /* XXX hack */
-        if (!strcmp(meta[i].name, "ac") ||
-            !strcmp(meta[i].name, "battery") ||
-            !strcmp(meta[i].name, "screen"))
-        {
-            continue;
-        }
-        value = *(int*)(ptr + meta[i].offset);
-        if (value == -1)
-            continue;
-        snprintf(path, PATH_MAX, "%s/%s", ONDEMAND_NODE, meta[i].name);
-        fd = open(path, O_WRONLY);
-        if (fd == -1)
-        {
-            fprintf(stderr, "open '%s': %s\n", path, strerror(errno));
-            continue;
-        }
-        sprintf(buf, "%d", value);
-        /* fprintf(stderr, "apply %s: %d\n", path, value); */
-        write(fd, buf, strlen(buf));
-        close(fd);
-    }
+        meta[i].handler(profile, &meta[i]);
 }
 
 static int profilecmp(const void* p1, const void* p2)

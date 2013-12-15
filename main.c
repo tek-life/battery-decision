@@ -93,18 +93,22 @@ static void apply_noop(const profile_t* profile __unused, const meta_t* meta __u
 #define FIELD(dtype, member, handler) \
     { #member, offsetof(dtype, member), handler }
 #define FIELD_END { NULL, -1, NULL }
+#define ONDEMAND_FIELD(member) \
+    FIELD(profile_t, member, apply_ondemand)
+#define PROFILE_FIELD(member, handler) \
+    FIELD(profile_t, member, handler)
 
 static const meta_t meta_profile[] = {
-    FIELD(profile_t, down_differential, apply_ondemand),
-    FIELD(profile_t, ignore_nice_load, apply_ondemand),
-    FIELD(profile_t, powersave_bias, apply_ondemand),
-    FIELD(profile_t, up_threshold, apply_ondemand),
-    FIELD(profile_t, sampling_down_factor, apply_ondemand),
-    FIELD(profile_t, sampling_rate, apply_ondemand),
-    FIELD(profile_t, battery, apply_noop),
-    FIELD(profile_t, ac, apply_noop),
-    FIELD(profile_t, cpu_mask, apply_cpu_mask),
-    FIELD(profile_t, screen, apply_noop),
+    ONDEMAND_FIELD(down_differential),
+    ONDEMAND_FIELD(ignore_nice_load),
+    ONDEMAND_FIELD(powersave_bias),
+    ONDEMAND_FIELD(up_threshold),
+    ONDEMAND_FIELD(sampling_down_factor),
+    ONDEMAND_FIELD(sampling_rate),
+    PROFILE_FIELD(battery, apply_noop),
+    PROFILE_FIELD(ac, apply_noop),
+    PROFILE_FIELD(cpu_mask, apply_cpu_mask),
+    PROFILE_FIELD(screen, apply_noop),
     FIELD_END
 };
 

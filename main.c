@@ -8,6 +8,7 @@
 #define CPU_NODE_FMT "/sys/devices/system/cpu/cpu%d/online"
 #define SCREEN_OFF_NODE "/sys/power/wait_for_fb_sleep"
 #define SCREEN_ON_NODE "/sys/power/wait_for_fb_wake"
+#define CPUS_MAX 8
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -74,7 +75,7 @@ static void apply_cpu_mask(const profile_t* profile, const meta_t* meta __unused
 {
     int i, fd;
     char path[PATH_MAX+1] = {0};
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < CPUS_MAX; i++)
     {
         snprintf(path, PATH_MAX, CPU_NODE_FMT, i);
         fd = open(path, O_WRONLY);

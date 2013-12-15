@@ -79,7 +79,7 @@ static void apply_cpu_mask(const profile_t* profile, const meta_t* meta __unused
         snprintf(path, PATH_MAX, CPU_NODE_FMT, i);
         fd = open(path, O_WRONLY);
         if (fd == -1)
-            continue;
+            break;
         write(fd, (profile->cpu_mask & (1 << (i+1))) ? "1" : "0", 1);
         close(fd);
     }

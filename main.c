@@ -164,7 +164,11 @@ static profile_t load_settings(const meta_t* meta,
     while (lineno++, fgets(buf, BUFSIZ-1, stream))
     {
         if (*buf)
-            buf[strlen(buf)-1] = '\0';
+        {
+            char* lf = &buf[strlen(buf)-1];
+            if (*lf == '\n')
+                *lf = '\0';
+        }
         {
             char* ptr = strchr(buf, '#');
             if (ptr)
